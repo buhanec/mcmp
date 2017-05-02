@@ -62,6 +62,8 @@ def mod_version(filename: str, name: str, game_ver: Iterable[str]) -> str:
         if part not in sep:
             filename = filename.replace(part.strip(sep), '')
             filename = filename.replace(part.strip(sep).lower(), '')
+    filename = filename.rsplit(' ', 1)[-1]
+    filename = filename.rsplit('--', 1)[-1]
     return filename.strip(sep)
 
 
@@ -103,7 +105,8 @@ def channel(info: element.Tag) -> str:
 
 
 def get_mod(cid: str, game_ver: Optional[str]='1.10.2'):
-    url = f'http://minecraft.curseforge.com/projects/{cid}/files?filter-game-version={VER_MAP[game_ver]}'
+    url = f'http://minecraft.curseforge.com/projects/{cid}/files?' \
+          f'filter-game-version={VER_MAP[game_ver]}'
     response = requests.get(url)
     if not response.ok:
         raise Exception(response.status_code, url)
