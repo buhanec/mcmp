@@ -106,7 +106,7 @@ def get_mod(cid: str, game_ver: Optional[str]='1.10.2'):
     url = f'http://minecraft.curseforge.com/projects/{cid}/files?filter-game-version={VER_MAP[game_ver]}'
     response = requests.get(url)
     if not response.ok:
-        raise Exception(response.status_code)
+        raise Exception(response.status_code, url)
 
     bs = BeautifulSoup(response.text, PARSER)
     name = mod_name(bs)
