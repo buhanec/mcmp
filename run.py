@@ -20,4 +20,10 @@ if __name__ == '__main__':
     pd.set_option('display.max_rows', len(mods))
     pd.set_option('display.width', 240)
     df = pd.DataFrame(mods).T
-    print(df)
+    df.accepted = df.accepted.astype(bool)
+
+    print('Accepted:')
+    print(df[df.accepted].drop('accepted', axis=1))
+    print()
+    print('Not Accepted:')
+    print(df[~df.accepted].drop('accepted', axis=1))
