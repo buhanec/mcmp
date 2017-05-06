@@ -3,3 +3,4 @@ requests
 requests_cache
 pytz
 pandas
+pyyaml
