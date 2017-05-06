@@ -6,6 +6,7 @@ from operator import itemgetter
 from datetime import datetime
 import pytz
 import re
+from string import ascii_letters, digits
 
 requests_cache.install_cache('demo_cache', expire_after=1*60*60)
 
@@ -49,22 +50,30 @@ PARSER = 'html.parser'
 
 
 def mod_version(filename: str, name: str, game_ver: Iterable[str]) -> str:
-    sep = '-_ ()[].'
-    word_pattern = re.compile('[\W_]+')
+    sep = '-_ ()[]. '
     for suffix in ('.jar', '.zip'):
         filename = filename.replace(suffix, '')
     for ver in game_ver:
         filename = filename.replace(ver, '')
-    for word in ('universal', 'MC', 'mc'):
-        word = word_pattern.sub('', word)
+    for word in ('universal', 'MC', 'mc', 'Mod', 'mod'):
         filename = filename.replace(word, '')
     for part in name.split():
         if part not in sep:
-            filename = filename.replace(part.strip(sep), '')
-            filename = filename.replace(part.strip(sep).lower(), '')
+            filename = re.sub(part, '', filename, flags=re.IGNORECASE)
+            part = re.sub('[\W_]+', '', part)
+            filename = re.sub(part, '', filename, flags=re.IGNORECASE)
+            part = re.sub('[^a-zA-Z]+', '', part)
+            filename = re.sub(part, '', filename, flags=re.IGNORECASE)
+    filename = filename.strip(sep)
     filename = filename.rsplit(' ', 1)[-1]
     filename = filename.rsplit('--', 1)[-1]
-    return filename.strip(sep)
+    filename = filename.strip(sep)
+    if filename.startswith('v-'):
+        filename = filename[2:]
+    if len(filename) > 1:
+        if filename[0] in ascii_letters and filename[1] in digits:
+            filename = filename[1:]
+    return filename
 
 
 def versions(info: element.Tag, skip_java=False) -> List[str]:
@@ -104,7 +113,7 @@ def channel(info: element.Tag) -> str:
     return info.find(class_='project-file-release-type').div['class'][0][:-6]
 
 
-def get_mod(cid: str, game_ver: Optional[str]='1.10.2'):
+def get_mod(cid: str, game_ver: Optional[str]='1.10.2', download=False):
     url = f'http://minecraft.curseforge.com/projects/{cid}/files?' \
           f'filter-game-version={VER_MAP[game_ver]}'
     response = requests.get(url)
@@ -121,14 +130,37 @@ def get_mod(cid: str, game_ver: Optional[str]='1.10.2'):
     mc_versions = versions(info)
     filename, cid, fid = link(info)
 
+    size = file_size(info)
+    get_mod_file(cid, fid, game_ver in mc_versions)
+
     return {
         'channel': channel(info),
         'cid': cid,
         'name': name,
-        'mod_ver':  mod_version(filename, name, mc_versions),
+        'filename': filename,
+        'mod_ver':  (mod_version(filename, name, mc_versions) or
+                     info.abbr['data-epoch']),
         'fid': fid,
-        'approx_size': file_size(info),
+        'size': size,
         'uploaded': uploaded(info),
         'accepted': game_ver in mc_versions,
         'latest_mc': sorted(mc_versions)[0]
     }
+
+
+def get_mod_file(cid: str, fid: int, accepted: bool):
+    url = f'https://minecraft.curseforge.com/projects/{cid}/files/{fid}/' \
+          f'download'
+    response = requests.get(url)
+    if not response.ok:
+        raise Exception(response.status_code, url)
+    local = response.url.split('/')[-1]
+    if accepted:
+        local = 'accepted/' + local
+    else:
+        local = 'not-accepted/' + local
+    with open(local, 'wb') as f:
+        for chunk in response.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+    return local, int(response.headers['Content-Length'])
