@@ -1,5 +1,7 @@
+from __future__ import print_function
 from mcmp import get_mod
 import pandas as pd
+# noinspection PyPackageRequirements
 import yaml
 import sys
 import requests

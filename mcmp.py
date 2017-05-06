@@ -1,8 +1,8 @@
 from typing import List, Tuple, Iterable, Optional
+# noinspection PyPackageRequirements
 from bs4 import BeautifulSoup, element
 import requests
 import requests_cache
-from operator import itemgetter
 from datetime import datetime
 import pytz
 import re
@@ -13,37 +13,6 @@ import os
 requests_cache.install_cache('demo_cache', expire_after=1*60*60)
 
 
-class Version(tuple):
-    """Version(major, minor, patch)"""
-
-    __slots__ = ()
-
-    _fields = ('major', 'minor', 'patch')
-
-    def __new__(cls, major, minor, patch=0):
-        """Create new instance of Version(major, minor, patch)"""
-        return tuple.__new__(cls, (int(major), int(minor), int(patch)))
-
-    def __str__(self):
-        """Return string representation"""
-        return '.'.join(map(str, self))
-
-    def __repr__(self):
-        """Return a nicely formatted representation string"""
-        return (f'{self.__class__.__name__}(major={self.major}, '
-                f'minor={self.minor}, patch={self.patch})')
-
-    major = property(itemgetter(0), doc='Alias for field number 0')
-
-    minor = property(itemgetter(1), doc='Alias for field number 1')
-
-    patch = property(itemgetter(2), doc='Alias for field number 2')
-
-
-class NoMatchingMod(Exception):
-    """No mod matching version required"""
-
-
 VER_MAP = {
     None: '',
     '1.10.2': '2020709689:6170'
@@ -51,6 +20,7 @@ VER_MAP = {
 PARSER = 'html.parser'
 
 
+# TODO: Clean up and replace with a few regex
 def mod_version(filename: str, name: str, game_ver: Iterable[str]) -> str:
     sep = '-_ ()[]. '
     for suffix in ('.jar', '.zip'):
@@ -116,8 +86,8 @@ def channel(info: element.Tag) -> str:
 
 
 def get_mod(cid: str, game_ver: Optional[str]='1.10.2', download=False):
-    url = f'http://minecraft.curseforge.com/projects/{cid}/files?' \
-          f'filter-game-version={VER_MAP[game_ver]}'
+    url = 'http://minecraft.curseforge.com/projects/{}/files?' \
+          'filter-game-version={}'.format(cid, VER_MAP[game_ver])
     response = requests.get(url)
     if not response.ok:
         raise Exception(response.status_code, url)
@@ -153,8 +123,8 @@ def get_mod(cid: str, game_ver: Optional[str]='1.10.2', download=False):
 
 
 def get_mod_file(cid: int, fid: int):
-    url = f'https://minecraft.curseforge.com/projects/{cid}/files/{fid}/' \
-          f'download'
+    url = 'https://minecraft.curseforge.com/projects/{}/files/{}/' \
+          'download'.format(cid, fid)
     response = requests.get(url)
     if not response.ok:
         raise Exception(response.status_code, url)
