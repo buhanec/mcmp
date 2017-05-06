@@ -1,4 +1,5 @@
 .idea/
+mods/*.jar
 *.yaml
 *.sqlite
 
