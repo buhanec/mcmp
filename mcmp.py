@@ -7,6 +7,8 @@ from datetime import datetime
 import pytz
 import re
 from string import ascii_letters, digits
+import zipfile
+import os
 
 requests_cache.install_cache('demo_cache', expire_after=1*60*60)
 
@@ -131,7 +133,9 @@ def get_mod(cid: str, game_ver: Optional[str]='1.10.2', download=False):
     filename, cid, fid = link(info)
 
     size = file_size(info)
-    get_mod_file(cid, fid, game_ver in mc_versions)
+
+    if download and game_ver in mc_versions:
+        get_mod_file(cid, fid)
 
     return {
         'channel': channel(info),
@@ -148,19 +152,22 @@ def get_mod(cid: str, game_ver: Optional[str]='1.10.2', download=False):
     }
 
 
-def get_mod_file(cid: str, fid: int, accepted: bool):
+def get_mod_file(cid: int, fid: int):
     url = f'https://minecraft.curseforge.com/projects/{cid}/files/{fid}/' \
           f'download'
     response = requests.get(url)
     if not response.ok:
         raise Exception(response.status_code, url)
-    local = response.url.split('/')[-1]
-    if accepted:
-        local = 'accepted/' + local
-    else:
-        local = 'not-accepted/' + local
+    local = 'mods/' + response.url.split('/')[-1]
     with open(local, 'wb') as f:
         for chunk in response.iter_content(chunk_size=1024):
             if chunk:
                 f.write(chunk)
+    # TODO: Make more generic
+    if response.headers['Content-Type'] == 'application/x-zip-compressed':
+        with zipfile.ZipFile(local, 'r') as z:
+            local_jar = local[:-4] + '.jar'
+            with open(local_jar, 'wb') as f:
+                f.write(z.open(local_jar).read())
+        os.remove(local)
     return local, int(response.headers['Content-Length'])
