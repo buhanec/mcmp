@@ -2,3 +2,4 @@ beautifulsoup4
 requests
 requests_cache
 pytz
+pandas
