@@ -3,11 +3,13 @@ import pandas as pd
 import yaml
 import sys
 import requests
+import requests_cache
 
 
 if __name__ == '__main__':
     if sys.argv[1].startswith('http'):
-        response = requests.get(sys.argv[1])
+        with requests_cache.disabled():
+            response = requests.get(sys.argv[1])
         if response.ok:
             mod_list = yaml.load(response.text)
         else:
@@ -23,7 +25,7 @@ if __name__ == '__main__':
     df.accepted = df.accepted.astype(bool)
 
     print('Accepted:')
-    print(df[df.accepted].drop('accepted', axis=1))
+    print(df[df.accepted][['name', 'channel', 'filename', 'mod_ver']])
     print()
     print('Not Accepted:')
-    print(df[~df.accepted].drop('accepted', axis=1))
+    print(df[~df.accepted][['name', 'channel', 'filename', 'mod_ver']])
