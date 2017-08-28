@@ -34,7 +34,7 @@ SIZE_MOD = {
 def mc_versions() -> Dict[str, str]:
     """
     Get MC versions mapping.
-    
+
     :return: MC versions mapping.
     """
     url = 'https://minecraft.curseforge.com/mc-mods'
@@ -94,7 +94,7 @@ class Mod:
     def download(self, path: str) -> Tuple[str, int]:
         """
         Download mod file.
-        
+
         :param path: Path to put file in.
         :return: Local path and file size.
         """
@@ -103,17 +103,26 @@ class Mod:
         response.raise_for_status()
 
         local = os.path.join(path, os.path.basename(response.url))
+        local_base = os.path.splitext(os.path.basename(local))[0]
         with open(local, 'wb') as f:
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:
                     f.write(chunk)
+
         # TODO: Make more generic
         if response.headers['Content-Type'] == 'application/x-zip-compressed':
+            target = None
             with zipfile.ZipFile(local, 'r') as z:
-                local_jar = local[:-4] + '.jar'
-                with open(local_jar, 'wb') as f:
-                    f.write(z.open(local_jar).read())
-            os.remove(local)
+                for filename in [f.filename for f in z.filelist]:
+                    filename_base = os.path.splitext(os.path.basename(filename))[0]
+                    if local_base == filename_base:
+                        target = os.path.join(path, os.path.basename(filename))
+                        with open(target, 'wb') as f:
+                            f.write(z.open(filename).read())
+                        break
+            if target is not None:
+                os.remove(local)
+                local = target
         return local, int(response.headers['Content-Length'])
 
     @property
@@ -135,7 +144,7 @@ class Mod:
 def version_score(version: str):
     """
     Scores a version string.
-    
+
     :param version: Version string.
     :return: Version score.
     """
@@ -149,7 +158,7 @@ def version_score(version: str):
 def mod_version(filename: str, game_ver: Iterable[str]) -> str:
     """
     Attempt to extract mod version from mod filename.
-    
+
     :param filename: Mod filename.
     :param game_ver: Game version of mod.
     :return: Mod version.
