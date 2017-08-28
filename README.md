@@ -1,6 +1,6 @@
 # mcmp
 
-A Python 2/3 tool for creating Minecraft Mod packs based on lists of curseforge mods.
+A Python 3 tool for creating Minecraft Mod packs based on lists of curseforge mods.
  
 ## Installation
 
