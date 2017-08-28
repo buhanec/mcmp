@@ -2,6 +2,7 @@
 mods/*.jar
 *.yaml
 *.sqlite
+*.ver
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
